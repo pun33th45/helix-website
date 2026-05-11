@@ -1,0 +1,1369 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Helix - AI IDE</title>
+  <meta name="description" content="Helix is a desktop code editor with streaming AI, Monaco editor, and integrated terminal.">
+  <link rel="icon" type="image/png" href="helix-icon.png">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; }
+
+    :root {
+      color-scheme: dark;
+      --bg: #0e0e0e;
+      --surface: #111111;
+      --surface-2: #151515;
+      --surface-3: #1b1b1b;
+      --line: rgba(255,255,255,0.06);
+      --line-strong: rgba(255,255,255,0.12);
+      --text: #e8e8e8;
+      --muted: #8a8a8a;
+      --dim: #5a5a5a;
+      --faint: #3a3a3a;
+      --purple: #7b6fff;
+      --blue: #4da3ff;
+      --mint: #00e5c8;
+      --green: #4ec94e;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      -webkit-font-smoothing: antialiased;
+      overflow-x: hidden;
+    }
+
+    a {
+      color: inherit;
+      text-decoration: none;
+    }
+
+    img {
+      max-width: 100%;
+    }
+
+    section {
+      position: relative;
+    }
+
+    .nav {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: 100;
+      height: 60px;
+      background: rgba(14, 14, 14, 0.85);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--line);
+      display: flex;
+      align-items: center;
+      padding: 0 40px;
+      justify-content: space-between;
+    }
+
+    .nav-logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      min-width: 0;
+    }
+
+    .nav-logo-icon {
+      width: 28px;
+      height: 28px;
+      display: block;
+      flex: 0 0 auto;
+      border-radius: 8px;
+      object-fit: cover;
+      object-position: 18% 45%;
+    }
+
+    .nav-logo-copy {
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+    }
+
+    .nav-logo-row {
+      display: flex;
+      align-items: baseline;
+      gap: 8px;
+    }
+
+    .nav-logo-name {
+      font-size: 18px;
+      font-weight: 700;
+      color: #ffffff;
+      letter-spacing: -0.02em;
+      line-height: 1;
+    }
+
+    .version-badge {
+      font-size: 10px;
+      color: #8a8a8a;
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 999px;
+      padding: 1px 6px 2px;
+      line-height: 1.2;
+    }
+
+    .nav-logo-sub {
+      font-size: 10px;
+      color: #5a5a5a;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      margin-top: 2px;
+    }
+
+    .nav-links {
+      display: flex;
+      gap: 36px;
+      align-items: center;
+    }
+
+    .nav-link {
+      font-size: 14px;
+      color: #8a8a8a;
+      transition: color 120ms;
+      font-weight: 400;
+      letter-spacing: 0.01em;
+    }
+
+    .nav-link:hover { color: #ffffff; }
+
+    .nav-cta {
+      height: 38px;
+      padding: 0 20px;
+      background: linear-gradient(135deg, #4f46a6 0%, #256a96 55%, #0f7b72 100%);
+      color: #ffffff;
+      border: 1px solid rgba(255,255,255,0.14);
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      transition: background 120ms, transform 120ms;
+      letter-spacing: -0.01em;
+      white-space: nowrap;
+    }
+
+    .nav-cta:hover {
+      background: linear-gradient(135deg, #5a50b8 0%, #2b78a8 55%, #128a80 100%);
+      transform: translateY(-1px);
+    }
+
+    .hero {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      padding: 140px 80px 80px;
+      gap: 80px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .hero::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px);
+      background-size: 60px 60px;
+      pointer-events: none;
+    }
+
+    .hero::after {
+      content: "";
+      position: absolute;
+      top: 20%;
+      left: -10%;
+      width: 600px;
+      height: 600px;
+      background: radial-gradient(circle, rgba(100,80,255,0.08) 0%, transparent 70%);
+      pointer-events: none;
+    }
+
+    .hero-left {
+      flex: 1;
+      max-width: 560px;
+      z-index: 1;
+    }
+
+    .hero-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 14px;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 100px;
+      font-size: 13px;
+      color: #8a8a8a;
+      margin-bottom: 28px;
+    }
+
+    .badge-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--green);
+      box-shadow: 0 0 8px var(--green);
+      animation: pulse 2s infinite;
+      flex: 0 0 auto;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.4; }
+    }
+
+    .hero-headline {
+      font-size: clamp(48px, 5vw, 72px);
+      font-weight: 800;
+      line-height: 1.05;
+      letter-spacing: -0.03em;
+      color: #ffffff;
+      margin: 0 0 24px;
+    }
+
+    .gradient-text {
+      background: linear-gradient(135deg, #7b6fff 0%, #4da3ff 50%, #00e5c8 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .hero-sub {
+      font-size: 17px;
+      line-height: 1.65;
+      color: #6e6e6e;
+      margin: 0 0 40px;
+      max-width: 440px;
+    }
+
+    .hero-ctas {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      margin-bottom: 32px;
+      flex-wrap: wrap;
+    }
+
+    .btn-primary {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 58px;
+      padding: 14px 28px;
+      background: linear-gradient(135deg, #4f46a6 0%, #256a96 55%, #0f7b72 100%);
+      color: #ffffff;
+      border-radius: 10px;
+      font-size: 15px;
+      font-weight: 700;
+      transition: all 150ms;
+      letter-spacing: -0.02em;
+      border: 1px solid rgba(255,255,255,0.14);
+    }
+
+    .btn-primary:hover {
+      background: linear-gradient(135deg, #5a50b8 0%, #2b78a8 55%, #128a80 100%);
+      transform: translateY(-2px);
+      box-shadow: 0 10px 30px rgba(37,106,150,0.2);
+    }
+
+    .btn-sub {
+      font-size: 11px;
+      font-weight: 400;
+      color: rgba(255,255,255,0.76);
+      margin-top: 2px;
+    }
+
+    .btn-secondary {
+      padding: 14px 22px;
+      background: #050505;
+      border: 1px solid rgba(255,255,255,0.16);
+      border-radius: 10px;
+      color: #ffffff;
+      font-size: 15px;
+      font-weight: 500;
+      transition: all 150ms;
+    }
+
+    .btn-secondary:hover {
+      border-color: rgba(255,255,255,0.25);
+      color: #ffffff;
+      background: #151515;
+    }
+
+    .hero-proof {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      flex-wrap: wrap;
+      font-size: 12px;
+      color: #4a4a4a;
+    }
+
+    .hero-right {
+      flex: 1;
+      position: relative;
+      z-index: 1;
+      min-width: 480px;
+    }
+
+    .app-window-frame {
+      position: relative;
+      border-radius: 12px;
+      overflow: hidden;
+      border: 1px solid rgba(255,255,255,0.08);
+      box-shadow:
+        0 0 0 1px rgba(255,255,255,0.04),
+        0 32px 80px rgba(0,0,0,0.6),
+        0 0 120px rgba(100,80,255,0.08);
+      background: #0b0b0c;
+    }
+
+    .mock-titlebar {
+      height: 42px;
+      background: #141414;
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+      display: grid;
+      grid-template-columns: 84px 1fr auto;
+      align-items: center;
+      gap: 16px;
+      padding: 0 14px;
+    }
+
+    .window-dots {
+      display: flex;
+      gap: 7px;
+    }
+
+    .window-dots span {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      display: block;
+    }
+
+    .dot-red { background: #ff5f57; }
+    .dot-yellow { background: #ffbd2e; }
+    .dot-green { background: #28c840; }
+
+    .mock-title {
+      color: #6a6a6a;
+      font-size: 12px;
+      text-align: center;
+    }
+
+    .mock-status {
+      color: #8a8a8a;
+      font-size: 11px;
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 999px;
+      padding: 4px 9px;
+    }
+
+    .app-screenshot {
+      display: grid;
+      grid-template-columns: 52px 170px minmax(300px, 1fr) 250px;
+      min-height: 510px;
+      background: #0e0e0e;
+    }
+
+    .mock-rail {
+      background: #101010;
+      border-right: 1px solid var(--line);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+      padding: 14px 8px;
+    }
+
+    .rail-icon {
+      width: 34px;
+      height: 34px;
+      border-radius: 8px;
+      display: grid;
+      place-items: center;
+      color: #7b7b7b;
+      border: 1px solid transparent;
+    }
+
+    .rail-icon.active {
+      background: rgba(255,255,255,0.04);
+      border-color: rgba(255,255,255,0.08);
+      color: #ffffff;
+    }
+
+    .mock-files {
+      background: #111111;
+      border-right: 1px solid var(--line);
+      padding: 16px 12px;
+    }
+
+    .mock-label {
+      color: #545454;
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      margin-bottom: 14px;
+      font-weight: 700;
+    }
+
+    .file-row {
+      height: 28px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: #777777;
+      font-size: 12px;
+      border-radius: 6px;
+      padding: 0 8px;
+    }
+
+    .file-row.active {
+      background: rgba(123,111,255,0.12);
+      color: #d8d4ff;
+    }
+
+    .mock-editor {
+      background:
+        linear-gradient(rgba(255,255,255,0.025) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px),
+        #0c0c0d;
+      background-size: 44px 44px;
+      padding: 18px 22px;
+      overflow: hidden;
+    }
+
+    .editor-tabs {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 22px;
+    }
+
+    .editor-tab {
+      color: #8a8a8a;
+      border: 1px solid rgba(255,255,255,0.08);
+      background: rgba(255,255,255,0.03);
+      border-radius: 7px;
+      padding: 7px 11px;
+      font-size: 12px;
+    }
+
+    .code-lines {
+      font: 500 13px/1.9 "SFMono-Regular", Consolas, monospace;
+      white-space: nowrap;
+      color: #c9c9c9;
+    }
+
+    .code-purple { color: #a69cff; }
+    .code-blue { color: #84b8ff; }
+    .code-green { color: #90e8c2; }
+    .code-comment { color: #555555; }
+    .code-indent { padding-left: 24px; }
+    .code-indent-2 { padding-left: 48px; }
+
+    .inline-suggestion {
+      margin-top: 28px;
+      border: 1px solid rgba(123,111,255,0.22);
+      background: rgba(123,111,255,0.08);
+      border-radius: 10px;
+      padding: 16px;
+      max-width: 360px;
+      color: #bdb7ff;
+      white-space: normal;
+      line-height: 1.5;
+      font-size: 12px;
+    }
+
+    .mock-chat {
+      background: #121212;
+      border-left: 1px solid var(--line);
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .chat-title {
+      color: #5a5a5a;
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.14em;
+      font-weight: 800;
+    }
+
+    .chat-bubble {
+      border: 1px solid rgba(255,255,255,0.08);
+      background: rgba(255,255,255,0.035);
+      border-radius: 10px;
+      padding: 12px;
+      color: #b8b8b8;
+      font-size: 12px;
+      line-height: 1.55;
+    }
+
+    .chat-bubble.ai {
+      border-color: rgba(77,163,255,0.2);
+      background: rgba(77,163,255,0.08);
+      color: #dceaff;
+    }
+
+    .chat-input {
+      margin-top: auto;
+      border: 1px solid rgba(255,255,255,0.08);
+      background: rgba(255,255,255,0.035);
+      border-radius: 9px;
+      color: #5a5a5a;
+      padding: 12px;
+      font-size: 12px;
+    }
+
+    .screenshot-glow {
+      position: absolute;
+      bottom: -40px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 80%;
+      height: 80px;
+      background: radial-gradient(ellipse, rgba(100,80,255,0.3) 0%, transparent 70%);
+      filter: blur(20px);
+      pointer-events: none;
+    }
+
+    .tech-strip {
+      padding: 20px 80px;
+      border-top: 1px solid rgba(255,255,255,0.04);
+      border-bottom: 1px solid rgba(255,255,255,0.04);
+      display: flex;
+      align-items: center;
+      gap: 40px;
+      overflow: hidden;
+    }
+
+    .tech-label {
+      font-size: 12px;
+      color: #3a3a3a;
+      white-space: nowrap;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+
+    .tech-logos {
+      display: flex;
+      gap: 40px;
+      align-items: center;
+    }
+
+    .tech-logos span {
+      font-size: 13px;
+      color: #3a3a3a;
+      white-space: nowrap;
+      font-weight: 500;
+      letter-spacing: 0.02em;
+      transition: color 150ms;
+    }
+
+    .tech-logos span:hover { color: #6a6a6a; }
+
+    .features-section {
+      padding: 100px 80px;
+      position: relative;
+    }
+
+    .section-label {
+      font-size: 12px;
+      color: #7b6fff;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      font-weight: 600;
+      margin-bottom: 12px;
+      text-align: center;
+    }
+
+    .section-title {
+      font-size: 42px;
+      font-weight: 800;
+      color: #ffffff;
+      text-align: center;
+      letter-spacing: -0.03em;
+      margin: 0 0 16px;
+    }
+
+    .section-sub {
+      font-size: 16px;
+      color: #5a5a5a;
+      text-align: center;
+      max-width: 480px;
+      margin: 0 auto 64px;
+      line-height: 1.6;
+    }
+
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1px;
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.06);
+      border-radius: 16px;
+      overflow: hidden;
+    }
+
+    .feature-card {
+      background: #0e0e0e;
+      padding: 36px 32px;
+      position: relative;
+      transition: background 150ms;
+    }
+
+    .feature-card:hover { background: #131313; }
+
+    .feature-tag {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      margin-bottom: 16px;
+    }
+
+    .tag-core { background: rgba(100,80,255,0.15); color: #9d8fff; }
+    .tag-ai { background: rgba(0,229,200,0.12); color: #00e5c8; }
+    .tag-free { background: rgba(78,201,78,0.12); color: #4ec94e; }
+
+    .feature-icon {
+      width: 40px;
+      height: 40px;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 20px;
+      color: #b8b8b8;
+    }
+
+    .feature-icon svg {
+      width: 19px;
+      height: 19px;
+    }
+
+    .feature-title {
+      font-size: 17px;
+      font-weight: 700;
+      color: #e8e8e8;
+      margin: 0 0 10px;
+      letter-spacing: -0.02em;
+    }
+
+    .feature-desc {
+      font-size: 14px;
+      line-height: 1.65;
+      color: #5a5a5a;
+      margin: 0;
+    }
+
+    .how-it-works {
+      padding: 100px 80px;
+      text-align: center;
+      border-top: 1px solid rgba(255,255,255,0.04);
+    }
+
+    .steps {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 20px;
+      margin-top: 64px;
+      flex-wrap: wrap;
+    }
+
+    .step {
+      flex: 1;
+      max-width: 260px;
+      min-height: 230px;
+      text-align: left;
+      padding: 32px;
+      background: rgba(255,255,255,0.02);
+      border: 1px solid rgba(255,255,255,0.06);
+      border-radius: 12px;
+    }
+
+    .step-num {
+      font-size: 11px;
+      font-weight: 700;
+      color: #7b6fff;
+      letter-spacing: 0.1em;
+      margin-bottom: 16px;
+    }
+
+    .step h3 {
+      font-size: 17px;
+      font-weight: 700;
+      color: #e8e8e8;
+      margin: 0 0 10px;
+      letter-spacing: -0.02em;
+    }
+
+    .step p {
+      font-size: 14px;
+      color: #5a5a5a;
+      line-height: 1.65;
+      margin: 0;
+    }
+
+    .step-connector {
+      font-size: 20px;
+      color: #2a2a2a;
+      flex-shrink: 0;
+    }
+
+    .providers-section {
+      padding: 80px;
+      border-top: 1px solid rgba(255,255,255,0.04);
+    }
+
+    .providers-grid {
+      display: flex;
+      flex-direction: column;
+      gap: 1px;
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.06);
+      border-radius: 12px;
+      overflow: hidden;
+      max-width: 640px;
+      margin: 0 auto;
+    }
+
+    .provider-card {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      padding: 20px 24px;
+      background: #0e0e0e;
+      transition: background 120ms;
+    }
+
+    .provider-card:hover { background: #131313; }
+
+    .provider-logo {
+      width: 36px;
+      height: 36px;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      font-weight: 700;
+      color: #8a8a8a;
+      flex-shrink: 0;
+    }
+
+    .provider-info { flex: 1; }
+
+    .provider-info h4 {
+      font-size: 14px;
+      font-weight: 600;
+      color: #e8e8e8;
+      margin: 0 0 2px;
+    }
+
+    .provider-info p {
+      font-size: 12px;
+      color: #5a5a5a;
+      margin: 0;
+    }
+
+    .provider-badge {
+      padding: 3px 10px;
+      border-radius: 100px;
+      font-size: 11px;
+      font-weight: 600;
+    }
+
+    .provider-badge.free {
+      background: rgba(78,201,78,0.12);
+      color: #4ec94e;
+      border: 1px solid rgba(78,201,78,0.2);
+    }
+
+    .download-section {
+      padding: 120px 80px;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+      border-top: 1px solid rgba(255,255,255,0.04);
+    }
+
+    .download-glow {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 600px;
+      height: 300px;
+      background: radial-gradient(ellipse, rgba(100,80,255,0.12) 0%, transparent 70%);
+      pointer-events: none;
+    }
+
+    .download-content {
+      position: relative;
+      z-index: 1;
+    }
+
+    .download-section h2 {
+      font-size: 52px;
+      font-weight: 800;
+      color: #ffffff;
+      letter-spacing: -0.03em;
+      margin: 0 0 16px;
+      position: relative;
+    }
+
+    .download-section p {
+      font-size: 16px;
+      color: #5a5a5a;
+      margin: 0 0 40px;
+      position: relative;
+    }
+
+    .download-ctas {
+      position: relative;
+      display: flex;
+      justify-content: center;
+    }
+
+    .btn-primary.large {
+      font-size: 17px;
+      padding: 18px 40px;
+      border-radius: 12px;
+    }
+
+    .download-meta {
+      display: flex;
+      gap: 16px;
+      justify-content: center;
+      margin-top: 24px;
+      font-size: 13px;
+      color: #3a3a3a;
+      position: relative;
+      flex-wrap: wrap;
+    }
+
+    .download-meta a {
+      color: #3a3a3a;
+      transition: color 120ms;
+    }
+
+    .download-meta a:hover { color: #6a6a6a; }
+
+    .footer {
+      padding: 60px 80px 40px;
+      border-top: 1px solid rgba(255,255,255,0.06);
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      grid-template-rows: auto auto;
+      gap: 40px;
+    }
+
+    .footer-logo {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 16px;
+      font-weight: 700;
+      color: #ffffff;
+      margin-bottom: 12px;
+    }
+
+    .footer-logo img {
+      width: 20px;
+      height: 20px;
+      border-radius: 6px;
+      object-fit: cover;
+      object-position: 18% 45%;
+    }
+
+    .footer-left p {
+      font-size: 13px;
+      color: #4a4a4a;
+      line-height: 1.6;
+      margin: 0;
+    }
+
+    .footer-right {
+      display: flex;
+      gap: 32px;
+      align-items: flex-start;
+      justify-content: flex-end;
+    }
+
+    .footer-right a {
+      font-size: 14px;
+      color: #5a5a5a;
+      transition: color 120ms;
+    }
+
+    .footer-right a:hover { color: #b0b0b0; }
+
+    .footer-bottom {
+      grid-column: 1 / -1;
+      font-size: 12px;
+      color: #2a2a2a;
+      padding-top: 24px;
+      border-top: 1px solid rgba(255,255,255,0.04);
+    }
+
+    @media (max-width: 1180px) {
+      .hero {
+        gap: 44px;
+        padding-inline: 48px;
+      }
+
+      .app-screenshot {
+        grid-template-columns: 52px minmax(320px, 1fr) 230px;
+      }
+
+      .mock-files {
+        display: none;
+      }
+    }
+
+    @media (max-width: 900px) {
+      .hero {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+
+      .hero-right {
+        min-width: 0;
+        width: 100%;
+      }
+
+      .features-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+
+    @media (max-width: 768px) {
+      .nav {
+        padding: 0 24px;
+      }
+
+      .nav-links {
+        display: none;
+      }
+
+      .hero {
+        flex-direction: column;
+        padding: 100px 24px 60px;
+      }
+
+      .hero-right {
+        display: none;
+      }
+
+      .hero-headline {
+        font-size: clamp(44px, 14vw, 56px);
+      }
+
+      .hero-sub {
+        max-width: none;
+      }
+
+      .hero-ctas {
+        align-items: stretch;
+      }
+
+      .btn-primary,
+      .btn-secondary,
+      .nav-cta {
+        width: 100%;
+      }
+
+      .hero-proof {
+        gap: 8px;
+      }
+
+      .tech-strip,
+      .features-section,
+      .how-it-works,
+      .providers-section,
+      .download-section {
+        padding-left: 24px;
+        padding-right: 24px;
+      }
+
+      .tech-strip {
+        gap: 24px;
+      }
+
+      .tech-logos {
+        gap: 28px;
+      }
+
+      .features-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .steps {
+        flex-direction: column;
+      }
+
+      .step {
+        max-width: none;
+        width: 100%;
+        min-height: auto;
+      }
+
+      .step-connector {
+        transform: rotate(90deg);
+      }
+
+      .provider-card {
+        align-items: flex-start;
+      }
+
+      .download-section h2,
+      .section-title {
+        font-size: 34px;
+      }
+
+      .download-meta {
+        gap: 10px;
+      }
+
+      .footer {
+        grid-template-columns: 1fr;
+        padding: 40px 24px;
+      }
+
+      .footer-right {
+        justify-content: flex-start;
+        flex-wrap: wrap;
+        gap: 20px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <nav class="nav" aria-label="Main navigation">
+    <a class="nav-logo" href="#top" aria-label="Helix home">
+      <img class="nav-logo-icon" src="helix-icon.png" alt="">
+      <span class="nav-logo-copy">
+        <span class="nav-logo-row">
+          <span class="nav-logo-name">Helix</span>
+          <span class="version-badge">v1.0</span>
+        </span>
+        <span class="nav-logo-sub">AI IDE</span>
+      </span>
+    </a>
+
+    <div class="nav-links">
+      <a class="nav-link" href="#features">Features</a>
+      <a class="nav-link" href="#showcase">Showcase</a>
+      <a class="nav-link" href="#download">Download</a>
+      <a class="nav-link" href="#github">GitHub</a>
+    </div>
+
+    <a class="nav-cta" href="#download" aria-label="Download Helix">
+      <span aria-hidden="true">↓</span>
+      Download
+    </a>
+  </nav>
+
+  <main>
+    <section class="hero" id="top">
+      <div class="hero-left">
+        <div class="hero-badge">
+          <span class="badge-dot"></span>
+          <span>AI-native code editor · Free to use</span>
+        </div>
+
+        <h1 class="hero-headline">
+          Code smarter.<br>
+          <span class="gradient-text">Ship faster.</span>
+        </h1>
+
+        <p class="hero-sub">
+          Helix is a desktop code editor with streaming AI, Monaco editor, and integrated terminal. Built with Electron. No subscription.
+        </p>
+
+        <div class="hero-ctas">
+          <a href="#download" class="btn-primary">
+            ↓ Download for Windows
+            <span class="btn-sub">Free · v1.0.0 · 94MB</span>
+          </a>
+          <a href="#github" class="btn-secondary">Star on GitHub</a>
+        </div>
+
+        <div class="hero-proof">
+          <span>Bring your own API key</span>
+          <span>·</span>
+          <span>Works offline for editing</span>
+          <span>·</span>
+          <span>No account needed</span>
+        </div>
+      </div>
+
+      <div class="hero-right" aria-label="Helix editor preview">
+        <div class="app-window-frame">
+          <div class="mock-titlebar">
+            <div class="window-dots" aria-hidden="true">
+              <span class="dot-red"></span>
+              <span class="dot-yellow"></span>
+              <span class="dot-green"></span>
+            </div>
+            <div class="mock-title">Helix - portfolio-app</div>
+            <div class="mock-status">Gemini ready</div>
+          </div>
+
+          <div class="app-screenshot">
+            <aside class="mock-rail" aria-label="Editor tools">
+              <div class="rail-icon active" title="Files">
+                <svg viewBox="0 0 24 24" width="17" height="17" fill="none" aria-hidden="true"><path d="M4 5h6l2 3h8v11H4z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg>
+              </div>
+              <div class="rail-icon" title="AI Chat">
+                <svg viewBox="0 0 24 24" width="17" height="17" fill="none" aria-hidden="true"><path d="m13 2-2 8h7L9 22l2-8H5z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg>
+              </div>
+              <div class="rail-icon" title="Terminal">
+                <svg viewBox="0 0 24 24" width="17" height="17" fill="none" aria-hidden="true"><path d="m7 8 4 4-4 4m6 0h4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              </div>
+              <div class="rail-icon" title="Search">
+                <svg viewBox="0 0 24 24" width="17" height="17" fill="none" aria-hidden="true"><path d="m21 21-4.3-4.3M10.8 18a7.2 7.2 0 1 1 0-14.4 7.2 7.2 0 0 1 0 14.4Z" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+              </div>
+            </aside>
+
+            <aside class="mock-files">
+              <div class="mock-label">Explorer</div>
+              <div class="file-row active">src/App.tsx</div>
+              <div class="file-row">src/components</div>
+              <div class="file-row">src/lib/ai.ts</div>
+              <div class="file-row">package.json</div>
+              <div class="file-row">README.md</div>
+            </aside>
+
+            <section class="mock-editor" aria-label="Code editor">
+              <div class="editor-tabs">
+                <span class="editor-tab">App.tsx</span>
+                <span class="editor-tab">ai.ts</span>
+              </div>
+              <div class="code-lines">
+                <div><span class="code-purple">import</span> HelixChat <span class="code-purple">from</span> <span class="code-green">"./components/chat"</span>;</div>
+                <div class="code-comment">// Stream responses as tokens arrive</div>
+                <br>
+                <div><span class="code-purple">export default function</span> <span class="code-blue">Workspace</span>() {</div>
+                <div class="code-indent"><span class="code-purple">return</span> (</div>
+                <div class="code-indent-2">&lt;HelixChat</div>
+                <div class="code-indent-2">provider=<span class="code-green">"gemini"</span></div>
+                <div class="code-indent-2">mode=<span class="code-green">"agentic"</span></div>
+                <div class="code-indent-2">/&gt;</div>
+                <div class="code-indent">);</div>
+                <div>}</div>
+              </div>
+              <div class="inline-suggestion">
+                Suggested edit: add repository context and apply the generated changes directly to selected files.
+              </div>
+            </section>
+
+            <aside class="mock-chat" aria-label="AI assistant panel">
+              <div class="chat-title">AI Assistant</div>
+              <div class="chat-bubble">Refactor this component and explain the state flow.</div>
+              <div class="chat-bubble ai">I found three state updates that can be consolidated. Applying a focused patch now.</div>
+              <div class="chat-bubble">Run the tests after the edit.</div>
+              <div class="chat-input">Ask about this workspace...</div>
+            </aside>
+          </div>
+          <div class="screenshot-glow"></div>
+        </div>
+      </div>
+    </section>
+
+    <div class="tech-strip" aria-label="Built with">
+      <span class="tech-label">Built with</span>
+      <div class="tech-logos">
+        <span>Electron</span>
+        <span>React</span>
+        <span>Monaco Editor</span>
+        <span>Google Gemini</span>
+        <span>xterm.js</span>
+        <span>Zustand</span>
+        <span>Vite</span>
+      </div>
+    </div>
+
+    <section class="features-section" id="features" aria-labelledby="features-title">
+      <div class="section-label">Features</div>
+      <h2 class="section-title" id="features-title">Everything you need to build</h2>
+      <p class="section-sub">
+        A fast desktop editor with AI workflows, terminal access, and provider choice built into the core experience.
+      </p>
+
+      <div class="features-grid">
+        <article class="feature-card">
+          <span class="feature-tag tag-core">Core</span>
+          <div class="feature-icon"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="m13 2-2 8h7L9 22l2-8H5z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg></div>
+          <h3 class="feature-title">Streaming AI Chat</h3>
+          <p class="feature-desc">Token-by-token responses from Gemini, Groq, or OpenRouter. Attach files, reference code, apply edits directly.</p>
+        </article>
+
+        <article class="feature-card">
+          <span class="feature-tag tag-core">Core</span>
+          <div class="feature-icon"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 5h16v14H4zM8 9h8M8 13h5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+          <h3 class="feature-title">Monaco Editor</h3>
+          <p class="feature-desc">The same editor engine powering VS Code. 50+ languages, IntelliSense, syntax highlighting, minimap.</p>
+        </article>
+
+        <article class="feature-card">
+          <span class="feature-tag tag-core">Core</span>
+          <div class="feature-icon"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="m7 8 4 4-4 4m6 0h4M4 5h16v14H4z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+          <h3 class="feature-title">Integrated Terminal</h3>
+          <p class="feature-desc">Full xterm.js terminal with PowerShell/Bash. Multiple tabs, resizable, runs in your workspace root.</p>
+        </article>
+
+        <article class="feature-card">
+          <span class="feature-tag tag-core">Core</span>
+          <div class="feature-icon"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 7h16M7 12h10M10 17h4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></div>
+          <h3 class="feature-title">Command Palette</h3>
+          <p class="feature-desc">Ctrl+Shift+P for commands, Ctrl+P for files. Fast fuzzy search across your entire workspace.</p>
+        </article>
+
+        <article class="feature-card">
+          <span class="feature-tag tag-ai">AI</span>
+          <div class="feature-icon"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 6h16M4 12h10M4 18h7m6-3 3 3-3 3" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+          <h3 class="feature-title">Inline Completions</h3>
+          <p class="feature-desc">Ghost text suggestions as you type. Tab to accept, Escape to dismiss. Powered by fast Gemini Flash.</p>
+        </article>
+
+        <article class="feature-card">
+          <span class="feature-tag tag-free">Free</span>
+          <div class="feature-icon"><svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M15 7a4 4 0 1 1-3.2-3.9A4 4 0 0 1 15 7Zm-4 4 9 9m-3-3 3-3m-6 0 3-3" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+          <h3 class="feature-title">Bring Your Own Key</h3>
+          <p class="feature-desc">Works with Gemini, Groq, or OpenRouter. Your key, your data, no subscriptions.</p>
+        </article>
+      </div>
+    </section>
+
+    <section class="how-it-works" id="showcase" aria-labelledby="how-title">
+      <div class="section-label">How it works</div>
+      <h2 class="section-title" id="how-title">Up and running in 3 steps</h2>
+
+      <div class="steps">
+        <article class="step">
+          <div class="step-num">01</div>
+          <h3>Download & Install</h3>
+          <p>Download the Windows installer. No Node.js required. Double-click and install like any app.</p>
+        </article>
+        <div class="step-connector">→</div>
+        <article class="step">
+          <div class="step-num">02</div>
+          <h3>Add your API key</h3>
+          <p>Get a free Gemini or Groq API key. Paste it into Helix settings. Takes 30 seconds.</p>
+        </article>
+        <div class="step-connector">→</div>
+        <article class="step">
+          <div class="step-num">03</div>
+          <h3>Open a folder & code</h3>
+          <p>Open any project folder. Start chatting with your codebase. Ship faster.</p>
+        </article>
+      </div>
+    </section>
+
+    <section class="providers-section" aria-labelledby="providers-title">
+      <div class="section-label">Flexible AI</div>
+      <h2 class="section-title" id="providers-title">Your key. Your model. Your choice.</h2>
+      <p class="section-sub">
+        Helix works with multiple AI providers. All free to start. Switch anytime in settings.
+      </p>
+
+      <div class="providers-grid">
+        <article class="provider-card">
+          <div class="provider-logo">G</div>
+          <div class="provider-info">
+            <h4>Google Gemini</h4>
+            <p>Free tier available · Gemini Flash support</p>
+          </div>
+          <span class="provider-badge free">Free</span>
+        </article>
+        <article class="provider-card">
+          <div class="provider-logo">⚡</div>
+          <div class="provider-info">
+            <h4>Groq</h4>
+            <p>Free tier available · Fast inference · Llama models</p>
+          </div>
+          <span class="provider-badge free">Free</span>
+        </article>
+        <article class="provider-card">
+          <div class="provider-logo">OR</div>
+          <div class="provider-info">
+            <h4>OpenRouter</h4>
+            <p>Multiple models · Llama, Mistral, Gemma, and more</p>
+          </div>
+          <span class="provider-badge free">Free</span>
+        </article>
+      </div>
+    </section>
+
+    <section class="download-section" id="download" aria-labelledby="download-title">
+      <div class="download-glow"></div>
+
+      <div class="download-content">
+        <h2 id="download-title">Ready to code smarter?</h2>
+        <p>Free download. Bring your own API key. No subscription.</p>
+
+        <div class="download-ctas">
+          <a href="#download" class="btn-primary large">
+            ↓ Download Helix for Windows
+            <span class="btn-sub">v1.0.0 · ~94MB · Windows x64</span>
+          </a>
+        </div>
+
+        <div class="download-meta" id="github">
+          <a href="#github">Star on GitHub</a>
+          <span>·</span>
+          <a href="#github">Report Issues</a>
+          <span>·</span>
+          <a href="#features">Documentation</a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-left">
+      <div class="footer-logo">
+        <img src="helix-icon.png" alt="">
+        <span>Helix</span>
+      </div>
+      <p>AI-powered desktop code editor.<br>Built by a CS student. Open source.</p>
+    </div>
+    <div class="footer-right">
+      <a href="#github">GitHub</a>
+      <a href="#download">Download</a>
+      <a href="#github">Report Bug</a>
+    </div>
+    <div class="footer-bottom">
+      <span>© 2026 Helix. MIT License. Free forever.</span>
+    </div>
+  </footer>
+</body>
+</html>

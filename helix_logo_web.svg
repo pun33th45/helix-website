@@ -1,0 +1,29 @@
+<svg width="680" height="220" viewBox="0 0 680 220" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title desc">
+  <title id="title">Helix Logo</title>
+  <desc id="desc">Helix AI IDE logo with an angular double helix mark and wordmark.</desc>
+  <defs>
+    <linearGradient id="mark" x1="46" y1="28" x2="166" y2="188" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#F4F4F5"/>
+      <stop offset="0.48" stop-color="#9DB8FF"/>
+      <stop offset="1" stop-color="#78DCCA"/>
+    </linearGradient>
+    <linearGradient id="word" x1="214" y1="72" x2="502" y2="72" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#F8FAFC"/>
+      <stop offset="1" stop-color="#C8D6FF"/>
+    </linearGradient>
+  </defs>
+  <rect x="8" y="8" width="664" height="204" rx="28" fill="#0E0F11"/>
+  <rect x="8.5" y="8.5" width="663" height="203" rx="27.5" stroke="white" stroke-opacity="0.1"/>
+  <path d="M48 170L122 106L52 50" stroke="url(#mark)" stroke-width="12" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M154 50L82 106L158 170" stroke="url(#mark)" stroke-width="12" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M57 52H153M48 170H158M83 106H122" stroke="#9DB8FF" stroke-opacity="0.62" stroke-width="6" stroke-linecap="round"/>
+  <circle cx="52" cy="50" r="8" fill="#F4F4F5"/>
+  <circle cx="154" cy="50" r="8" fill="#9DB8FF"/>
+  <circle cx="48" cy="170" r="8" fill="#9DB8FF"/>
+  <circle cx="158" cy="170" r="8" fill="#78DCCA"/>
+  <text x="214" y="113" fill="url(#word)" font-family="Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="82" font-weight="760" letter-spacing="-4">Helix</text>
+  <rect x="216" y="132" width="250" height="4" rx="2" fill="#9DB8FF"/>
+  <text x="218" y="166" fill="#8B8D95" font-family="'SFMono-Regular', Consolas, monospace" font-size="18" font-weight="600" letter-spacing="7">AI CODE EDITOR</text>
+  <circle cx="603" cy="60" r="5" fill="#78DCCA"/>
+  <text x="532" y="166" fill="#8B8D95" font-family="'SFMono-Regular', Consolas, monospace" font-size="15" letter-spacing="1">Gemini</text>
+</svg>

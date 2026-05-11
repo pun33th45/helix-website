@@ -1,0 +1,21 @@
+{
+  "name": "helix-website",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Production landing page for Helix, an AI-native desktop code editor.",
+  "scripts": {
+    "dev": "npx serve .",
+    "start": "npx serve .",
+    "build": "echo \"Static site: no build step required\""
+  },
+  "keywords": [
+    "helix",
+    "ai-ide",
+    "electron",
+    "monaco-editor",
+    "gemini",
+    "code-editor"
+  ],
+  "author": "Helix",
+  "license": "MIT"
+}
