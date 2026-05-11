@@ -2,6 +2,8 @@
 
 Production landing page for **Helix**, an AI-native desktop code editor built with Electron, Monaco Editor, integrated terminal support, and flexible AI provider configuration.
 
+Live site: [https://helix-ide.vercel.app](https://helix-ide.vercel.app)
+
 ## Overview
 
 Helix is designed for developers who want a fast desktop editor with streaming AI chat, inline completions, terminal access, and bring-your-own-key AI providers. This repository contains the static marketing website used for the public launch page.
